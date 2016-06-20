@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.wudi.crm.mapper.ContractMapper">
+
+	<update id="createTable">
+		CREATE TABLE if not exists `t_contract` (
+		  `id` int(11) NOT NULL AUTO_INCREMENT,
+		  `sn` varchar(255) DEFAULT NULL,
+		  `signTime` datetime DEFAULT NULL,
+		  `intro` varchar(255) DEFAULT NULL,
+		  `sum` decimal(10,0) DEFAULT NULL,
+		  `customer_id` bigint(20) NOT NULL,
+		  `seller_id` bigint(20) DEFAULT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<insert id="save" parameterType="Contract" keyProperty="id" useGeneratedKeys="true" >
+		insert into t_contract (sn,signTime,intro,sum,customer_id,seller_id)
+			values(#{sn},#{signTime},#{intro},#{sum},#{customer.id},#{seller.id})
+	</insert>
+	
+	<update id="update" parameterType="Contract" >
+		update t_contract set sn=#{sn},signTime=#{signTime},intro=#{intro},sum=#{sum},
+			customer_id=#{customer.id},seller_id=#{seller.id}
+			where id=#{id}
+	</update>
+	
+	<delete id="delete" parameterType="long" >
+		delete from t_contract where id=#{id}
+	</delete>
+	
+	<resultMap type="Contract" id="ContractResultMap">
+		<id column="id" property="id" />
+		<result column="sn" property="sn" />
+		<result column="signTime" property="signTime" />
+		<result column="sum" property="sum" />
+		<result column="intro" property="intro" />
+		<association property="customer" javaType="Customer" >
+			<id column="cus_id" property="id" />
+			<result column="cus_name" property="name" />
+		</association>
+		<association property="seller" javaType="Employee" >
+			<id column="emp_id" property="id" />
+			<result column="emp_realName" property="realName" />
+		</association>
+	</resultMap>
+	
+	
+	<select id="get" parameterType="long" resultMap="ContractResultMap" >
+		select con.*,cus.id cus_id,cus.name cus_name,emp.id emp_id,emp.realName emp_realName 
+			from t_contract con 
+			left join t_customer cus on con.customer_id=cus.id
+			left join t_employee emp on con.seller_id=emp.id  
+			where con.id=#{id}
+	</select>
+	
+	<sql id="sql_where">
+		<where>
+			<if test="customerId!=null">
+				and con.customer_id=#{customerId}
+			</if>
+			<if test="sellerId!=null">
+				and con.seller_id=#{sellerId}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="sql_limit">
+		<if test="beginIndex!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+	
+	<select id="getList" parameterType="ContractQuery" resultMap="ContractResultMap" >
+		select con.*,cus.id cus_id,cus.name cus_name,emp.id emp_id,emp.realName emp_realName 
+			from t_contract con 
+			left join t_customer cus on con.customer_id=cus.id
+			left join t_employee emp on con.seller_id=emp.id 			
+		<include refid="sql_where"/>
+		<include refid="sql_limit"/>
+	</select>
+	
+	<select id="getCount" parameterType="ContractQuery" resultType="int" >
+		select count(con.id) 
+			from t_contract con 
+			left join t_customer cus on con.customer_id=cus.id
+			left join t_employee emp on con.seller_id=emp.id
+		<include refid="sql_where"/>
+	</select>
+
+</mapper>

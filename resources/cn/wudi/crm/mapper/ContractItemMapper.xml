@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.wudi.crm.mapper.ContractItemMapper">
+
+	<update id="createTable">
+		CREATE TABLE IF NOT EXISTS `t_contractitem` (
+		  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+		  `payTime` datetime DEFAULT NULL,
+		  `money` decimal(12,2) NOT NULL,
+		  `scale` decimal(7,5) DEFAULT NULL,
+		  `isPayment` int(11) DEFAULT '0',
+		  `contract_id` bigint(20) NOT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<insert id="save" parameterType="ContractItem" >
+		insert into t_contractitem (payTime,money,scale,isPayment,contract_id)
+			values(#{payTime},#{money},#{scale},#{isPayment},#{contract.id})
+	</insert>
+	
+	<update id="update" parameterType="ContractItem" >
+		update t_contractitem set payTime=#{payTime},money=#{money},scale=#{scale},
+			isPayment=#{isPayment},contract_id=#{contract.id}
+			where id=#{id}
+	</update>
+	
+	<delete id="delete" parameterType="long" >
+		delete from t_contractitem where id=#{id}
+	</delete>
+	
+	<resultMap type="ContractItem" id="ContractItemResultMap">
+		<id column="id" property="id" />
+		<result column="payTime" property="payTime" />
+		<result column="money" property="money" />
+		<result column="scale" property="scale" />
+		<result column="isPayment" property="isPayment" />
+		<association property="contract" javaType="Contract" >
+			<id column="con_id" property="id" />
+			<result column="con_sn" property="sn" />
+			<result column="con_sum" property="sum" />
+		</association>
+	</resultMap>
+	
+	
+	<select id="get" parameterType="long" resultMap="ContractItemResultMap" >
+		select ci.*,co.id co_id,co.sn co_sn,co.sum co_sum
+			from t_contractitem ci 
+			left join t_contract co on ci.contract_id=co.id
+			where ci.id=#{id}
+	</select>
+	
+	<sql id="sql_where">
+		<where>
+			<if test="contractId!=null">
+				and ci.contract_id=#{contractId}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="sql_limit">
+		<if test="rows!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+	
+	<select id="getList" parameterType="ContractItemQuery" resultMap="ContractItemResultMap" >
+		select ci.*
+			from t_contractitem ci 
+			left join t_contract co on ci.contract_id=co.id			
+		<include refid="sql_where"/>
+		<include refid="sql_limit"/>
+	</select>
+	
+	<select id="getCount" parameterType="ContractItemQuery" resultType="int" >
+		select count(ci.id)
+			from t_contractitem ci 
+			left join t_contract co on ci.contract_id=co.id
+		<include refid="sql_where"/>
+	</select>
+	
+	<select id="getListByParent" parameterType="long" resultMap="ContractItemResultMap" >
+		select ci.*
+			from t_contractitem ci 
+			where ci.contract_id=#{id}
+	</select>
+
+</mapper>

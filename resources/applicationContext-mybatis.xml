@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx.xsd
+	">
+	
+	<context:property-placeholder location="classpath:db.properties"/>
+	<!-- Spring 集成 mybatis配置文件 -->
+	
+	<!-- 创建数据源 -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<!-- 
+			配置连接池信息 
+			url : String
+			username : String
+			password : String
+			driverClassName : String
+		-->	
+		<property name="url" value="${db.url}"/>
+		<property name="driverClassName" value="${db.driver}"/>
+		<property name="username" value="${db.username}"/>
+		<property name="password" value="${db.password}"/>
+	</bean>
+
+	<!-- 
+		session工厂创建bean 
+		Resource[] mapperLocations;
+		DataSource dataSource;
+		Properties configurationProperties;//暂时不需要
+		Class<?>[] typeAliases; //直接使用包
+		String typeAliasesPackage;
+	-->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 自动扫描 mapper包下的所有文件 -->
+		<property name="mapperLocations"  value="classpath*:cn/wudi/crm/mapper/*Mapper.xml"/>
+		<property name="dataSource" ref="dataSource" />
+		<property name="typeAliasesPackage" value="cn.wudi.crm.domain,cn.wudi.crm.query" />
+	</bean>
+	
+	<!--
+		 mapper生成  不使用 domain太多太麻烦 使用自动扫描生成mapper
+	-->
+	<!-- <bean id="employeeMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+	</bean> -->
+	
+	<!-- 
+		找到spring-mybas mapper 该类的注释 
+		MapperScannerConfigurer 支 持 过 滤 由 指 定 的 创 建 接 口 或 注 解 创 建 映 射 器 。 
+		annotationClass 属性指定了要寻找的注解名称。 
+		markerInterface 属性指定了要寻找的父 接口。如果两者都被指定了,加入到接口中的映射器会匹配两种标准。
+		默认情况下,这两个 属性都是 null,所以在基包中给定的所有接口可以作为映射器加载。
+	-->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+       <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+		<!-- 扫描自动生成mapper的package -->
+        <property name="basePackage" value="cn.wudi.crm.mapper" />
+        <!-- 只扫描该继承该接口的mapper接口 -->
+        <property name="markerInterface" value="cn.wudi.crm.mapper.BaseMapper"/>
+   </bean>
+   
+   <!-- 编写mapper测试 -->
+   
+   <!-- 事务的管理 -->
+   
+   <!-- 配置事务管理器 -->
+   <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+   		<property name="dataSource" ref="dataSource"></property>
+   </bean>
+
+	<!-- 事务aop切点 -->
+	<aop:config>
+		<aop:pointcut expression="execution(* cn.wudi.crm.service..*.*(..))" id="txManagerPointCut"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txManagerPointCut"/>
+	</aop:config>
+	
+	<!-- 配置事务的增强 -->
+	<tx:advice transaction-manager="transactionManager" id="txAdvice">
+		<tx:attributes>
+			<tx:method name="get*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="select*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+</beans>

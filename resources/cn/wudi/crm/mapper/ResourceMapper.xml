@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.ResourceMapper">
+
+
+	<!-- ID id 主键，系统自动生成 数据库自动生成 资源名称 name 文本 是 资源地址 url 访问地址 文本 是 -->
+	<!-- 建表语句 -->
+	<update id="createTable">
+		CREATE TABLE if not exists `t_resource` (
+		`id` bigint(20) NOT NULL AUTO_INCREMENT,
+		`name` varchar(20) NOT NULL,
+		`url` varchar(255) NOT NULL,
+		PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<insert id="save" parameterType="Resource">
+		insert into t_resource
+		(name,url)
+		values(#{name}, #{url})
+	</insert>
+	
+	<insert id="saveList" parameterType="list">
+		insert into t_resource
+		(name,url)
+		values
+		<foreach collection="list" item="item" index="index"  separator=",">  
+			(#{item.name}, #{item.url})
+    	</foreach>  
+	</insert>
+
+	<delete id="delete" parameterType="long">
+		delete from t_resource where
+		id=#{id}
+	</delete>
+
+	<update id="update" parameterType="Resource">
+		update t_resource set
+		name=#{name}, url=#{url} where id=#{id}
+	</update>
+
+	<select id="get" parameterType="long" resultType="Resource">
+		select * from
+		t_resource where id=#{id}
+	</select>
+
+	<select id="getCount" parameterType="ResourceQuery" resultType="int">
+		select count(*) from t_resource
+	</select>
+	
+	<select id="getCountByUrl" parameterType="string" resultType="int">
+		select count(id) from t_resource where url=#{url}
+	</select>
+
+	<select id="getList" parameterType="ResourceQuery" resultType="Resource">
+		select * from t_resource
+		<where>
+			<if test="name!=null and name!=''">
+				name like concat('%',#{name},'%')
+			</if>
+			<if test="url!=null and url!=''">
+				AND url like concat('%',#{url},'%')
+			</if>
+		</where>
+		<if test="rows != null">
+			limit #{beginIndex}, #{rows}
+		</if>
+	</select>
+	
+	<delete id="deleteList" parameterType="list">
+		delete from t_resource
+		where url in
+		<foreach collection="list" item="item" index="index" open="(" close=")" separator=",">  
+			 #{item.url}
+    	</foreach>  
+	</delete>
+	
+	<select id="findResource"  parameterType="ResourceQuery" resultType="Resource">
+		select *  from t_resource 
+		WHERE url NOT IN
+		(select r.url from t_resource r  INNER JOIN t_permission p ON r.url=p.resource)
+		
+		<if test="rows != null">
+			limit #{beginIndex}, #{rows}
+		</if>
+	</select>
+	
+	<select id="getCountByfindResource" parameterType="ResourceQuery" resultType="int">
+		select count(id)  from t_resource 
+		WHERE url NOT IN
+		(select r.url from t_resource r  INNER JOIN t_permission p ON r.url=p.resource)
+		
+	</select>
+	
+</mapper>

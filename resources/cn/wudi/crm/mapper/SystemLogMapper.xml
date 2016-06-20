@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.SystemLogMapper">
+
+	<!--
+		private String keyword;
+		private Long userId;
+		private Date startTime;
+		private Date endTime; 
+	 -->
+	<sql id="querySql">
+		<where>
+			<if test="keyword != null">
+				e.username like concat('%',#{keyword}, '%')
+				or 
+				l.function like concat('%',#{keyword}, '%')
+			</if>
+			<if test="userId != null">
+				and e.id=#{userId}
+			</if>
+			<if test="startTime != null">
+				and l.opTime>#{startTime}
+			</if>
+			<if test="endTime != null">
+				and l.opTime &lt; #{endTime}
+			</if>
+		</where>
+	</sql>
+
+	<update id="createTable">
+		create table if not exists t_systemlog(
+		id bigint(20) not null auto_increment,
+		opUser_id bigint(20) not null,
+		opTime datetime not null,
+		opIp varchar(80) not null,
+		function varchar(225) not null,
+		primary key(id)
+		)engine=innodb default charset=utf8
+	</update>
+	
+	<resultMap type="SystemLog" id="SystemLogResultMap">
+		<id column="id" property="id"/>
+		<id column="opTime" property="opTime"/>
+		<id column="opIp" property="opIp"/>
+		<id column="function" property="function"/>
+		<association property="opUser" javaType="Employee">
+				 <id column="eid" property="id"/>
+				 <result column="eusername" property="username"/>
+				 <result column="erealName" property="realName"/>
+		</association>
+	</resultMap>
+
+	<insert id="save" parameterType="SystemLog">
+		insert into t_systemlog (opUser_id,opTime,opIp,function)
+			values(#{opUser.id},#{opTime},#{opIp},#{function})
+	</insert>
+
+	<delete id="delete" parameterType="long">
+		delete from t_systemlog where id=#{id}
+	</delete>
+
+	<update id="update" parameterType="SystemLog">
+	</update>
+
+	<select id="get" parameterType="long" resultMap="SystemLogResultMap">
+		select l.*,e.id eid,e.username eusername,e.realname erealName
+		from t_systemlog l
+		left join t_employee  e on e.id = l.opUser_id
+		where l.id=#{id}
+	</select>
+
+	<select id="getList" parameterType="SystemLogQuery"
+		resultMap="SystemLogResultMap">
+		select l.*,e.id eid,e.username eusername,e.realname erealName
+		from t_systemlog l
+		left join t_employee  e on e.id = l.opUser_id
+		<include refid="querySql" />
+		<if test="rows != null">
+			limit #{beginIndex}, #{rows}
+		</if> 
+	</select>
+
+	<select id="getCount" parameterType="SystemLogQuery"
+		resultType="int">
+		select count(l.id)
+		from t_systemlog l
+		left join t_employee  e on e.id = l.opUser_id
+		<!-- 导入查询语句 -->
+		<include refid="querySql" />
+	</select>
+</mapper>

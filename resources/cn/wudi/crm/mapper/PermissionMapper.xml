@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.PermissionMapper">
+
+	
+	<!-- 
+		ID	id	主键，系统自动生成	数据库自动生成	
+		权限名称	name		文本	是
+		资源地址	resource	由于关联简单（并且修改频率低），可以直接存关联对象的值【减少多变关联查询】	文本	是
+	 -->
+	<!-- 建表语句 -->
+	<update id="createTable">
+		  CREATE TABLE if not exists `t_permission` (
+		  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+		  `name` varchar(20) NOT NULL,
+		  `resource` varchar(20) NOT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+	
+	<insert id="saveList" parameterType="list">
+		insert into t_permission (name,resource) 
+		values
+		<foreach collection="list" item="item" index="index"  separator=",">  
+			(#{item.name}, #{item.url})
+    	</foreach>
+	</insert>
+	
+	<delete id="deleteList" parameterType="list">
+		delete from t_permission
+		where id in
+		<foreach collection="list" item="item" index="index" open="(" close=")" separator=",">  
+			 #{item.id}
+    	</foreach>  
+	</delete>
+	
+	<update id="update" parameterType="Permission">
+		update t_permission set name=#{name}, resource=#{resource} where id=#{id}
+	</update>
+	
+	<select id="get" parameterType="long" resultType="Permission">
+		select * from t_permission where id=#{id}
+	</select>
+	
+	<select id="getCount" parameterType="PermissionQuery" resultType="int">
+		select count(*) from t_permission
+	</select>
+	
+	<select id="getList" parameterType="PermissionQuery" resultType="Permission">
+		select * from t_permission 
+		<where>
+			<if test="name!=null and name!=''">
+				name like concat('%',#{name},'%')					
+			</if>
+			<if test="resource!=null and resource!=''">
+				AND resource like concat('%',#{resource},'%')					
+			</if>
+		</where> 
+		<include refid="limtsql"></include>
+	</select>
+	<!-- 查询角色下面的所有的权限 -->
+	<select id="getPermissions" parameterType="long" resultType="Permission">
+		select p.* from t_permission p
+			left join t_permission_role rp on(rp.permission_id=p.id)
+			left join t_role r on(r.id=rp.role_id) 	
+				where r.id=#{roleId}		
+	</select>
+	<sql id="limtsql">
+		<if test="beginIndex!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+	
+	<!-- 根据资源地址获取权限 -->
+	<select id="getPermissionByResourceUrl" parameterType="string" resultType="Permission">
+			select * from t_permission where resource=#{resourceUrl}
+	</select>
+	
+	<select id="getPermissionByUser" parameterType="long" resultType="Permission">
+		select DISTINCT p.* 
+		from t_permission p 
+		left join t_permission_role pr on(p.id=pr.permission_id)
+		left join t_role r on(r.id=pr.role_id)
+		left join t_employee_role er on(r.id=er.role_id)
+		left join t_employee e on(e.id=er.employee_id)
+		where e.id=#{userId}
+	</select>
+	
+	
+</mapper>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.CutomerTransferMapper">
+	<update id="createTable">
+		CREATE TABLE if not exists `t_cutomertransfer` (
+		`id`
+		bigint(20) NOT NULL AUTO_INCREMENT,
+		`customer_id` bigint(20) NOT NULL,
+		`transUser_id` bigint(20) NOT NULL,
+		`transTime` date NOT NULL,
+		`oldSeller_id` bigint(20) NOT NULL,
+		`newSeller_id` bigint(20) DEFAULT
+		NULL,
+		`transReason` varchar(20) DEFAULT NULL,
+		PRIMARY KEY (`id`)
+		)
+		ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+	<!-- ID Id 主键，系统自动生成 数据库自动生成 菜单编号 sn 文本 是 菜单名称 name 文本 是 上级菜单 parent_id 
+		父菜单的id 图标 icon 文本 地址 url 文本 简介 intro 文本 -->
+	<!-- 建表语句 -->
+	<insert id="save" parameterType="CutomerTransfer">
+		insert into t_cutomerTransfer
+		(customer_id,
+		transUser_id,transTime,oldSeller_id,newSeller_id,transReason)
+		values(#{customer.id}, #{transUser.id}, #{transTime}, #{oldSeller.id},
+		#{newSeller.id}, #{transReason})
+	</insert>
+	<update id="update" parameterType="CutomerTransfer">
+		update t_cutomerTransfer set
+		customer_id=#{customer.id},transUser_id=#{transUser.id},
+		transTime=#{transTime},oldSeller_id=#{oldSeller.id},
+		newSeller_id=#{newSeller.id},transReason=#{transReason}
+		where id=#{id}
+	</update>
+	<delete id="delete" parameterType="long">
+		delete from t_cutomerTransfer
+		where id=#{id}
+	</delete>
+	<resultMap type="CutomerTransfer" id="CutomerTransferMap">
+		<id column="id" property="id" />
+		<result column="transTime" property="transTime" />
+		<result column="transReason" property="transReason" />
+		<association property="customer" javaType="Customer">
+			<id column="cid" property="id" />
+			<result column="cusname" property="name" />
+		</association>
+		<association property="transUser" javaType="Employee">
+			<id column="empid" property="id" />
+			<result column="empname" property="username" />
+		</association>
+		<association property="oldSeller" javaType="Employee">
+			<id column="eid" property="id" />
+			<result column="ename" property="username" />
+		</association>
+		<association property="newSeller" javaType="Employee">
+			<id column="epid" property="id" />
+			<result column="epname" property="username" />
+		</association>
+	</resultMap>
+	<select id="get" parameterType="long" resultMap="CutomerTransferMap">
+		select cut.*,cus.id cid,cus.name cusname,emp.id empid,
+		emp.username empname,e.id eid,e.username ename,
+		ep.username epname,ep.id epid
+		from t_cutomerTransfer cut
+		left join t_customer cus on(cut.customer_id=cus.id)
+		left join t_employee emp on(cut.transUser_id=emp.id)
+		left join t_employee e on(cut.oldSeller_id=e.id)
+		left join t_employee ep on(cut.newSeller_id=ep.id)
+		where cut.id=#{id}
+	</select>
+	<select id="getList" parameterType="CutomerTransferQuery" resultMap="CutomerTransferMap">
+		select cut.*,cus.id cid,cus.name cusname,emp.id empid,
+		emp.username empname,e.id eid,e.username ename,
+		ep.username epname,ep.id epid
+		from (
+			select * from t_cutomerTransfer cut
+			<include refid="query" />
+			<if test="rows!=null">
+				limit #{beginIndex},#{rows}
+			</if>
+		) cut
+		left join t_customer cus on(cut.customer_id=cus.id)
+		left join t_employee emp on(cut.transUser_id=emp.id)
+		left join t_employee e on(cut.oldSeller_id=e.id)
+		left join t_employee ep on(cut.newSeller_id=ep.id)
+	</select>
+	<select id="getCount" resultType="int" parameterType="CutomerTransferQuery">
+		select
+		count(*) from t_cutomerTransfer cut
+		<include refid="query"/>
+	</select>
+	<sql id="query">
+		<where>
+			<if test="customerId!=null">
+				cut.customer_id = #{customerId}
+			</if>
+			<if test="transUserId!=null">
+				and cut.transUser_id = #{transUserId}
+			</if>
+			<if test="oldSellerId!=null">
+				and cut.oldSeller_id = #{oldSellerId}
+			</if>
+			<if test="newSellerId!=null">
+				and cut.newSeller_id = #{newSellerId}
+			</if>
+		</where>
+	</sql>
+	
+	<delete id="deleteCutomerTransfer" parameterType="long">
+		delete from t_cutomerTransfer 
+			where customer_id=#{id}
+	</delete>
+</mapper>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.EmployeeMapper">
+	<update id="createTable">
+				CREATE TABLE IF NOT EXISTS `t_employee` (
+		  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+		  `username` varchar(255) NOT NULL,
+		  `realName` varchar(255) DEFAULT NULL,
+		  `password` varchar(255) NOT NULL,
+		  `tel` varchar(255) NOT NULL,
+		  `email` varchar(255) DEFAULT NULL,
+		  `dept_id` bigint(255) DEFAULT NULL,
+		  `inputTime` datetime DEFAULT NULL,
+		  `state` int(11) DEFAULT NULL,
+		  `role_id` bigint(20) DEFAULT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+	<sql id="querySql">
+		<where>
+			<if test="searchKey!=null">
+				(e.username like #{searchKey} or e.realName like #{searchKey} or e.tel like #{searchKey})		
+			</if>
+		</where>
+	</sql>
+	<insert id="save" parameterType="cn.wudi.crm.domain.Employee">
+		insert into t_employee (username,realName,password,tel,email,dept_id,inputTime,state,role_id)
+			values(#{username},#{realName},#{password},#{tel},#{email},#{dept.id},#{inputTime},#{state},#{role.id})
+	</insert>
+	<delete id="delete" parameterType="long">
+		delete from t_employee where id=#{id}
+	</delete>
+	<update id="update" parameterType="cn.wudi.crm.domain.Employee">
+		update t_employee set username=#{username},realName=#{realName},password=#{password},
+		tel=#{tel},email=#{email},dept_id=#{dept.id},inputTime=#{inputTime},
+		state=#{state},role_id=#{role.id}
+		where id=#{id}
+	</update>
+	<select id="get" parameterType="long" resultMap="EmployeeResultMap">
+		select e.*,dept.id deptId,dept.name deptName
+			,role.id roleId,role.name roleName
+		 from t_employee e
+			left join t_department dept on(e.dept_id=dept.id)
+			left join t_role role on(e.role_id=role.id)
+		where e.id=#{id}
+	</select>
+	<resultMap type="Employee" id="EmployeeResultMap">
+		<id column="id" property="id" />
+		<result column="username" property="username" />
+		<result column="realName" property="realName" />
+		<result column="password" property="password" />
+		<result column="tel" property="tel" />
+		<result column="email" property="email" />
+		<result column="status" property="status" />
+		<result column="inputTime" property="inputTime" />
+		<association property="role" javaType="Role">
+			<id column="roleId" property="id" />
+			<result column="roleName" property="name" />
+		</association>
+		<association property="dept" javaType="Department">
+			<id column="deptId" property="id" />
+			<result column="deptName" property="name" />
+		</association>
+	</resultMap>
+	<select id="getList" parameterType="cn.wudi.crm.query.EmployeeQuery" resultMap="EmployeeResultMap">
+		select e.*,dept.id deptId,dept.name deptName
+			,role.id roleId,role.name roleName
+		 from t_employee e
+			left join t_department dept on(e.dept_id=dept.id)
+			left join t_role role on(e.role_id=role.id)
+		<include refid="querySql" />
+		<if test="rows != null">
+			limit #{beginIndex}, #{rows}
+		</if>
+		
+	</select>
+	<select id="getCount" parameterType="cn.wudi.crm.query.EmployeeQuery" resultType="int">
+		select count(*) from t_employee e
+		<include refid="querySql" />
+	</select>
+	<select id="getEmployeeByUsername" parameterType="string" resultType="cn.wudi.crm.domain.Employee">
+		select * from t_employee where username=#{username}	
+	</select>
+</mapper>

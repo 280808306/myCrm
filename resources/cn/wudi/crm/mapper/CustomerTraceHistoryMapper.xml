@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.CustomerTraceHistoryMapper">
+	<update id="createTable">
+		CREATE TABLE if not exists `t_customertracehistory` (
+		`id` bigint(20) NOT NULL AUTO_INCREMENT,
+		`customer_id` bigint(20) NOT NULL,
+		`traceUser_id` bigint(20) DEFAULT NULL,
+		`traceTime` date DEFAULT NULL,
+		`traceType_id` bigint(20) DEFAULT NULL,
+		`title` varchar(20) DEFAULT NULL,
+		`remark` varchar(20) DEFAULT NULL,
+		`traceResult` int(11) DEFAULT NULL,
+		PRIMARY KEY (`id`)
+		) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+	</update>
+
+	<!-- ID Id 主键，系统自动生成 数据库自动生成 菜单编号 sn 文本 是 菜单名称 name 文本 是 上级菜单 parent_id 
+		父菜单的id 图标 icon 文本 地址 url 文本 简介 intro 文本 -->
+	<!-- 建表语句 -->
+	<insert id="save" parameterType="CustomerTraceHistory">
+		insert into
+		t_customerTraceHistory (traceUser_id,
+		traceTime,traceType_id,traceResult,title,remark,customer_id)
+		values(#{traceUser.id}, #{traceTime}, #{traceType.id}, #{traceResult},
+		#{title}, #{remark},#{customer.id})
+	</insert>
+	<update id="update" parameterType="CustomerTraceHistory">
+		update t_customerTraceHistory
+		set
+		traceUser_id=#{traceUser.id},traceTime=#{traceTime},customer_id=#{customer.id},
+		traceType_id=#{traceType.id},traceResult=#{traceResult},title=#{title},remark=#{remark}
+		where id=#{id}
+	</update>
+	<delete id="delete" parameterType="long">
+		delete from
+		t_customerTraceHistory where id=#{id}
+	</delete>
+
+
+	<resultMap type="CustomerTraceHistory" id="CustomerTraceHistoryResultMap">
+		<id column="id" property="id" />
+		<result column="traceResult" property="traceResult" />
+		<result column="title" property="title" />
+		<result column="remark" property="remark" />
+		<result column="traceTime" property="traceTime" />
+		<association property="customer" javaType="Customer">
+			<id column="cusId" property="id" />
+			<result column="cusName" property="name" />
+		</association>
+		<association property="traceUser" javaType="Employee">
+			<id column="empId" property="id" />
+			<result column="empName" property="username" />
+		</association>
+		<association property="traceType" javaType="SystemDictionaryItem">
+			<id column="sysid" property="id" />
+			<result column="sysname" property="name" />
+		</association>
+	</resultMap>
+	<select id="get" parameterType="long" resultMap="CustomerTraceHistoryResultMap">
+		select
+		his.*,cus.name cusName,cus.id cusId,emp.id empId,emp.username empName,
+		sys.id sysid,sys.name sysname 
+		from t_customerTraceHistory his
+		left join t_customer cus on(his.customer_id=cus.id)
+		left join t_employee emp on(emp.id=his.traceUser_id)
+		left join t_systemdictionaryitem sys on(his.traceType_id=sys.id)
+		where his.id=#{id}
+	</select>
+	<select id="getList" parameterType="CustomerTraceHistoryQuery" resultMap="CustomerTraceHistoryResultMap">
+		select his.*,cus.name
+		cusName,cus.id cusId,emp.id empId,emp.username empName
+		from (select * from t_customerTraceHistory his
+			<include refid="query" />
+			<if test="rows!=null">
+				limit #{beginIndex}, #{rows}
+			</if>
+		) his
+		left join t_customer cus
+		on(his.customer_id=cus.id)
+		left join t_employee emp
+		on(emp.id=his.traceUser_id)
+	</select>
+	<select id="getCount" resultType="int" parameterType="CustomerTraceHistoryQuery">
+		select
+		count(*) from t_customerTraceHistory his
+		<include refid="query" />
+	</select>
+	<sql id="query"> 
+		<where>
+			<if test="traceResult!=null ">
+				his.traceResult = #{traceResult}
+			</if>
+			<if test="title!=null and title!=''">
+				AND his.title=#{title}
+			</if>
+			<if test="remark!=null">
+				AND his.remark=#{remark}
+			</if>
+			<if test="traceUserId!=null">
+				AND his.traceUser_id=#{traceUserId}
+			</if>
+			<if test="customerId!=null">
+				AND his.customer_id=#{customerId}
+			</if>
+		</where>
+	</sql>
+	<delete id="deleteCustomerTraceHistory" parameterType="long">
+		delete from t_customerTraceHistory 
+			where customer_id=#{id}
+	</delete>
+</mapper>

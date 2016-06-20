@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.wudi.crm.mapper.CustomerDevPlanMapper">
+
+	<update id="createTable">
+		CREATE TABLE if not exists `t_customerdevplan` (
+		  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+		  `planTime` datetime DEFAULT NULL,
+		  `planSubject` varchar(255) NOT NULL,
+		  `planDetails` varchar(255) NOT NULL,
+		  `planType_id` bigint(20) DEFAULT NULL,
+		  `potentialCustomer_id` bigint(20) DEFAULT NULL,
+		  `inputUser_id` bigint(20) NOT NULL,
+		  `inputTime` datetime NOT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<insert id="save" parameterType="CustomerDevPlan" >
+		insert into t_customerdevplan (planTime,planSubject,planDetails,planType_id,
+				potentialCustomer_id,inputUser_id,inputTime)
+			values(#{planTime},#{planSubject},#{planDetails},#{planType.id},
+				#{potentialCustomer.id},#{inputUser.id},#{inputTime})
+	</insert>
+	
+	<update id="update" parameterType="CustomerDevPlan" >
+		update t_customerdevplan set planTime=#{planTime},planSubject=#{planSubject},
+				planDetails=#{planDetails},planType_id=#{planType.id},
+				potentialCustomer_id=#{potentialCustomer.id},inputTime=#{inputTime},
+				inputUser_id=#{inputUser.id}
+			where id=#{id}
+	</update>
+	
+	<delete id="delete" parameterType="long" >
+		delete from t_customerdevplan where id=#{id}
+	</delete>
+	
+	<resultMap type="CustomerDevPlan" id="CustomerDevPlanResultMap">
+		<id column="id" property="id" />
+		<result column="planTime" property="planTime" />
+		<result column="planSubject" property="planSubject" />
+		<result column="planDetails" property="planDetails" />
+		<result column="inputTime" property="inputTime" />
+		<association property="potentialCustomer" javaType="PotentialCustomer" >
+			<id column="pot_id" property="id" />
+			<result column="pot_name" property="name" />
+		</association>
+		<association property="inputUser" javaType="Employee" >
+			<id column="emp_id" property="id" />
+			<result column="emp_username" property="username" />
+			<result column="emp_realName" property="realName" />
+		</association>
+		<association property="planType" javaType="SystemDictionaryItem" >
+			<id column="sysi_id" property="id" />
+			<result column="sysi_name" property="name" />
+		</association>
+	</resultMap>
+	
+	<select id="get" parameterType="long" resultMap="CustomerDevPlanResultMap" >
+		select cus.* from t_customerdevplan cus where cus.id=#{id}
+	</select>
+	
+	<sql id="sql_where">
+		<where>
+			<if test="planSubject!=null">
+				and cus.planSubject like concat('%',#{planSubject},'%')
+			</if>
+			<if test="planTypeId!=null">
+				and cus.planType_id=#{planTypeId}
+			</if>
+			<if test="inputUserId!=null">
+				and cus.inputUser_id=#{inputUserId}
+			</if>
+			<if test="potentialCustomerId!=null">
+				and cus.potentialCustomer_id=#{potentialCustomerId}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="sql_limit">
+		<if test="beginIndex!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+	
+	<select id="getList" parameterType="CustomerDevPlanQuery" resultMap="CustomerDevPlanResultMap" >
+		select cus.* ,pot.id pot_id,pot.name pot_name,emp.id emp_id,emp.username emp_username,
+			emp.realName emp_realName,sysi.id sysi_id,sysi.name sysi_name
+		from t_customerdevplan cus
+		left join t_potentialcustomer pot on pot.id=cus.potentialCustomer_id
+		left join t_employee emp on emp.id=cus.inputUser_id
+		left join t_systemdictionaryitem sysi on sysi.id=cus.planType_id 			
+		<include refid="sql_where"/>
+		<include refid="sql_limit"/>
+	</select>
+	
+	<select id="getCount" parameterType="CustomerDevPlanQuery" resultType="int" >
+		select count(cus.id) from t_customerdevplan cus 
+		<include refid="sql_where"/>
+	</select>
+
+</mapper>

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.SystemMenuMapper">
+
+	<sql id="querySql">
+		<where>
+			<if test="name!=null">
+				m.name like concat('%',#{name},'%')
+			</if>
+			<if test="sn!=null">
+				and m.sn like concat('%',#{sn},'%')
+			</if>
+			<if test="parentId!=null">
+				and m.parent_id=#{parentId}
+			</if>
+			<if test="url!=null">
+				and m.url=#{url}
+			</if>
+		</where>
+	</sql>
+	<resultMap type="SystemMenu" id="menuResultMap">
+		<id column="id" property="id" />
+		<result column="sn" property="sn" />
+		<result column="name" property="name" />
+		<result column="icon" property="icon" />
+		<result column="url" property="url" />
+		<result column="intro" property="intro" />
+		
+		<!-- 多对一 多个子菜单对应一个父菜单 -->
+		<association property="parent" column="parent_id"
+			javaType="SystemMenu">
+			<id column="p_id" property="id" />
+			<result column="p_name" property="name" />
+		</association>
+		
+		<association property="permission" javaType="Permission">
+			<id column="perid" property="id" />
+			<result column="pername" property="name" />
+		</association>
+	</resultMap>
+	
+	<update id="createTable">
+		CREATE TABLE  if not exists `t_systemmenu` (
+		  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+		  `sn` varchar(40) NOT NULL,
+		  `name` varchar(20) NOT NULL,
+		  `parent_id` bigint(20) DEFAULT NULL,
+		  `icon` varchar(40) DEFAULT NULL,
+		  `url` varchar(80) DEFAULT NULL,
+		  `intro` varchar(255) DEFAULT NULL,
+		  `permission_id` bigint(20) DEFAULT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<!-- ID Id 主键，系统自动生成 数据库自动生成 菜单编号 sn 文本 是 菜单名称 name 文本 是 上级菜单 parent_id 
+		父菜单的id 图标 icon 文本 地址 url 文本 简介 intro 文本 -->
+	<!-- 建表语句 -->
+
+	<insert id="save" parameterType="SystemMenu">
+		insert into t_systemmenu (sn,
+		name, parent_id, icon, url, intro, permission_id)
+		values(#{sn}, #{name}, #{parent.id}, #{icon}, #{url}, #{intro}, #{permission.id})
+	</insert>
+
+	<delete id="delete" parameterType="long">
+		delete from t_systemmenu where
+		id=#{id}
+	</delete>
+
+	<update id="update" parameterType="SystemMenu">
+		update t_systemmenu set
+		sn=#{sn}, name=#{name}, parent_id=#{parent.id}, icon=#{icon},
+		url=#{url}, intro=#{intro},permission_id = #{permission.id}
+		where id=#{id}
+	</update>
+
+	<select id="get" parameterType="long" resultMap="menuResultMap">
+		select m.*,p.id p_id, p.name p_name
+		from t_systemmenu m left join t_systemmenu p on(m.parent_id=p.id) where
+		m.id = #{id}
+	</select>
+
+	<select id="getList" parameterType="SystemMenuQuery" resultMap="menuResultMap">
+		select m.*,p.id p_id, p.name p_name,
+		per.id perid, per.`name` pername
+		from  t_systemmenu m 
+		left join t_systemmenu p on(m.parent_id=p.id)
+		left join t_permission per on per.id = m.permission_id
+		<include refid="querySql" />
+		<if test="rows != null">
+			limit #{beginIndex}, #{rows}
+		</if>
+	</select>
+	
+	<resultMap type="SystemMenu" id="menuTreeResultMap">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="icon" property="icon" />
+		<result column="url" property="url" />
+		<!-- 多对一 多个子菜单对应一个父菜单 -->
+		<collection property="children" ofType="SystemMenu">
+			<id column="c_id" property="id" />
+			<result column="c_name" property="name" />
+			<result column="c_icon" property="icon" />
+			<result column="c_url" property="url" />
+			<association property="permission" column="permission_id"
+				javaType="Permission">
+				<id column="pid" property="id" />
+				<result column="pname" property="name" />
+				<result column="presource" property="resource" />
+			</association>
+		</collection>
+		
+	</resultMap>
+
+	<!-- 二级菜单 -->
+	<select id="getUserMenus" resultMap="menuTreeResultMap">
+		select m.*,
+			p.id pid,p.name pname,p.resource presource,
+			c.id c_id, c.name c_name, c.icon c_icon,c.url c_url
+		from t_systemmenu m
+		left join t_systemmenu c on c.parent_id = m.id
+		left join t_permission p on p.id = c.permission_id
+		where m.parent_id is null
+	</select>
+
+	<select id="getCount" parameterType="SystemMenuQuery" resultType="int">
+		select count(*) from t_systemmenu m
+		<!-- 导入查询语句 -->
+		<include refid="querySql" />
+	</select>
+
+</mapper>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.wudi.crm.mapper.GuaranteeMapper">
+
+	<update id="createTable">
+		CREATE TABLE IF not exists `t_guarantee` (
+		  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+		  `sn` varchar(255) DEFAULT NULL,
+		  `customer_id` bigint(20) DEFAULT NULL,
+		  `endTime` datetime DEFAULT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<insert id="save" parameterType="Guarantee" keyProperty="id" useGeneratedKeys="true" >
+		insert into t_guarantee (sn,endTime,customer_id)
+			values(#{sn},#{endTime},#{customer.id})
+	</insert>
+	
+	<update id="update" parameterType="Guarantee" >
+		update t_guarantee set sn=#{sn},endTime=#{endTime},
+			customer_id=#{customer.id}
+			where id=#{id}
+	</update>
+	
+	<delete id="delete" parameterType="long" >
+		delete from t_guarantee where id=#{id}
+	</delete>
+	
+	<resultMap type="Guarantee" id="GuaranteeResultMap">
+		<id column="id" property="id" />
+		<result column="sn" property="sn" />
+		<result column="endTime" property="endTime" />
+		<association property="customer" javaType="Customer" >
+			<id column="cus_id" property="id" />
+			<result column="cus_name" property="name" />
+		</association>
+	</resultMap>
+	
+	
+	<select id="get" parameterType="long" resultMap="GuaranteeResultMap" >
+		select gua.*,cus.id cus_id,cus.name cus_name 
+			from t_guarantee gua 
+			left join t_customer cus on gua.customer_id=cus.id
+			where gua.id=#{id}
+	</select>
+	
+	<sql id="sql_where">
+		<where>
+			<if test="customerId!=null">
+				and gua.customer_id=#{customerId}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="sql_limit">
+		<if test="rows!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+	
+	<select id="getList" parameterType="GuaranteeQuery" resultMap="GuaranteeResultMap" >
+		select gua.*,cus.id cus_id,cus.name cus_name
+			from t_guarantee gua 
+			left join t_customer cus on gua.customer_id=cus.id	
+		<include refid="sql_where"/>
+		<include refid="sql_limit"/>
+	</select>
+	
+	<select id="getCount" parameterType="GuaranteeQuery" resultType="int" >
+		select count(gua.id) 
+			from t_guarantee gua 
+			left join t_customer cus on gua.customer_id=cus.id
+		<include refid="sql_where"/>
+	</select>
+
+</mapper>

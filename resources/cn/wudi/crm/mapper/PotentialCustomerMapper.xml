@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.wudi.crm.mapper.PotentialCustomerMapper">
+
+	<update id="createTable">
+		CREATE TABLE IF NOT EXISTS `t_potentialcustomer` (
+			`id` bigint(20) NOT NULL AUTO_INCREMENT,
+			`name` varchar(255) NOT NULL,
+			`successRate` decimal(10,0) NOT NULL,
+			`remark` varchar(255) NOT NULL,
+			`linkMan` varchar(255) DEFAULT NULL,
+			`linkManTel` varchar(255) DEFAULT NULL,
+			`inputTime` datetime NOT NULL,
+			`inputUser_id` bigint(20) NOT NULL,
+			`customerSource_id` bigint(20) DEFAULT NULL,
+			PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<insert id="save" parameterType="PotentialCustomer" >
+		insert into t_potentialcustomer (name,successRate,remark,linkMan,linkManTel,
+				inputTime,inputUser_id,customerSource_id)
+			values(#{name},#{successRate},#{remark},#{linkMan},#{linkManTel},
+				#{inputTime},#{inputUser.id},#{customerSource.id})
+	</insert>
+	
+	<update id="update" parameterType="PotentialCustomer">
+		update t_potentialcustomer set name=#{name},successRate=#{successRate},remark=#{remark},
+				linkMan=#{linkMan},linkManTel=#{linkManTel},inputTime=#{inputTime},
+				inputUser_id=#{inputUser.id},customerSource_id=#{customerSource.id}
+			where id=#{id}
+	</update>
+	
+	<delete id="delete" parameterType="long" >
+		delete from t_potentialcustomer where id=#{id}
+	</delete>
+	
+	<resultMap type="PotentialCustomer" id="potentialCustomerResultMap">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="successRate" property="successRate" />
+		<result column="remark" property="remark" />
+		<result column="linkMan" property="linkMan" />
+		<result column="linkManTel" property="linkManTel" />
+		<result column="inputTime" property="inputTime" />
+		<association property="customerSource" javaType="SystemDictionaryItem" >
+			<id column="sysi_id" property="id" />
+			<result column="sysi_name" property="name" />
+		</association>
+		<association property="inputUser" javaType="Employee" >
+			<id column="emp_id" property="id" />
+			<result column="emp_username" property="username" />
+			<result column="emp_realName" property="realName" />
+		</association>
+	</resultMap>
+	
+	<select id="get" parameterType="long" resultMap="potentialCustomerResultMap" >
+		select pot.*,sysi.id sysi_id,sysi.name sysi_name,emp.id emp_id,
+			emp.username emp_username,emp.realName emp_realName 
+		from t_potentialcustomer pot 
+		left join t_systemdictionaryitem sysi on sysi.id=pot.customerSource_id
+		left join t_employee emp on emp.id=pot.inputUser_id
+		where pot.id=#{id}
+	</select>
+	
+	<sql id="sql_where">
+		<where>
+			<if test="name!=null">
+				and pot.name like concat('%',#{name},'%')
+			</if>
+			<if test="minSuccessRate!=null">
+				and pot.successRate>=#{minSuccessRate}
+			</if>
+			<if test="maxSuccessRate!=null" >
+				and pot.successRate&lt;=#{maxSuccessRate}
+			</if>
+			<if test="inputUserId!=null">
+				and pot.inputUser_id=#{inputUserId}
+			</if>
+			<if test="customerSourceId!=null">
+				and pot.customerSource_id=#{customerSourceId}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="sql_limit">
+		<if test="beginIndex!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+	
+	<select id="getList" parameterType="potentialCustomerQuery" resultMap="potentialCustomerResultMap" >
+		select pot.*,sysi.id sysi_id,sysi.name sysi_name,emp.id emp_id,
+			emp.username emp_username,emp.realName emp_realName 
+		from t_potentialcustomer pot 
+		left join t_systemdictionaryitem sysi on sysi.id=pot.customerSource_id
+		left join t_employee emp on emp.id=pot.inputUser_id			
+		<include refid="sql_where"/>
+		<include refid="sql_limit"/>
+	</select>
+	
+	<select id="getCount" parameterType="potentialCustomerQuery" resultType="int" >
+		select count(pot.id) from t_potentialcustomer pot 
+		<include refid="sql_where"/>
+	</select>
+
+</mapper>

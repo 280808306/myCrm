@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.RoleMapper">
+
+
+	<!-- ID id 主键，系统自动生成 数据库自动生成 权限名称 name 文本 是 资源地址 resource 由于关联简单（并且修改频率低），可以直接存关联对象的值【减少多变关联查询】 
+		文本 是 -->
+	<!-- 建表语句 -->
+	<update id="createTable">
+		CREATE TABLE if not exists `t_role` (
+		`id` bigint(20) NOT NULL AUTO_INCREMENT,
+		`sn` varchar(40) DEFAULT NULL,
+		`name` varchar(40) DEFAULT NULL,
+		PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+	</update>
+
+	<insert id="save" parameterType="Role" keyProperty="id" useGeneratedKeys="true">
+		insert into t_role
+		(name,sn)
+		values(#{name}, #{sn})
+	</insert>
+
+	<delete id="delete" parameterType="long">
+		delete from t_role where
+		id=#{id}
+	</delete>
+
+	<update id="update" parameterType="Role">
+		update t_role set
+		name=#{name}, sn=#{sn} where id=#{id}
+	</update>
+
+	<select id="get" parameterType="long" resultType="Role">
+		select * from
+		t_role where id=#{id}
+	</select>
+
+	<select id="getCount" resultType="int">
+		select count(*) from t_role
+	</select>
+
+	<select id="getList" parameterType="RoleQuery" resultType="Role">
+		select * from t_role
+			<include refid="limtsql"></include>
+	</select>
+	
+	<select id="getRolesByUser" parameterType="long" resultType="Role">
+		select r.* from t_role r
+		LEFT JOIN t_employee_role er on er.role_id = r.id
+		LEFT JOIN t_employee  e on  e.id = er.employee_id
+		where e.id = #{userId}
+	</select>
+	
+	
+	<!-- 给角色添加全限 -->
+	<insert id="saveRolePermission" parameterType="list" >
+		insert into t_permission_role(role_id,permission_id)
+			values 
+			 <!-- 传进来的是一个中间表的对象-->
+			<foreach collection="list" item="link" separator=",">
+				(#{link.roleId},#{link.permissionId})
+			</foreach>
+	</insert>	
+	<!-- 删除角色时需要将中间表中的数据一起删除 -->
+	<delete id="deleteRolePermission" parameterType="long">
+		delete from t_permission_role where role_id=#{roleId}
+	</delete>
+	<!-- 分页 -->
+	<sql id="limtsql">
+		<if test="beginIndex!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+</mapper>

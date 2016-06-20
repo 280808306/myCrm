@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.wudi.crm.mapper.GuaranteeItemMapper">
+
+	<update id="createTable">
+		CREATE TABLE if not exists `t_guaranteeitem` (
+		  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+		  `guaranteeTime` datetime DEFAULT NULL,
+		  `content` varchar(255) DEFAULT NULL,
+		  `isSolve` int(1) DEFAULT NULL,
+		  `guarantee_id` bigint(20) DEFAULT NULL,
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	</update>
+
+	<insert id="save" parameterType="GuaranteeItem" >
+		insert into t_guaranteeitem (guaranteeTime,content,isSolve,guarantee_id)
+			values(#{guaranteeTime},#{content},#{isSolve},#{guarantee.id})
+	</insert>
+	
+	<update id="update" parameterType="GuaranteeItem" >
+		update t_guaranteeitem set guaranteeTime=#{guaranteeTime},content=#{content},
+			isSolve=#{isSolve},guarantee_id=#{guarantee.id}
+			where id=#{id}
+	</update>
+	
+	<delete id="delete" parameterType="long" >
+		delete from t_guaranteeitem where id=#{id}
+	</delete>
+	
+	<resultMap type="GuaranteeItem" id="GuaranteeItemResultMap">
+		<id column="id" property="id" />
+		<result column="guaranteeTime" property="guaranteeTime" />
+		<result column="content" property="content" />
+		<result column="isSolve" property="isSolve" />
+		<association property="guarantee" javaType="Guarantee" >
+			<id column="gua_id" property="id" />
+			<result column="gua_sn" property="sn" />
+		</association>
+	</resultMap>
+	
+	
+	<select id="get" parameterType="long" resultMap="GuaranteeItemResultMap" >
+		select guai.*,gua.id gua_id,gua.sn gua_sn
+			from t_guaranteeitem guai 
+			left join t_guarantee gua on guai.guarantee_id=gua.id
+			where guai.id=#{id}
+	</select>
+	
+	<sql id="sql_where">
+		<where>
+			<if test="guaranteeId!=null">
+				and guai.guarantee_id=#{guaranteeId}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="sql_limit">
+		<if test="rows!=null">
+			limit #{beginIndex},#{rows}
+		</if>
+	</sql>
+	
+	<select id="getList" parameterType="GuaranteeItemQuery" resultMap="GuaranteeItemResultMap" >
+		select guai.*
+			from t_guaranteeitem guai 
+			left join t_guarantee gua on guai.guarantee_id=gua.id		
+		<include refid="sql_where"/>
+		<include refid="sql_limit"/>
+	</select>
+	
+	<select id="getCount" parameterType="GuaranteeItemQuery" resultType="int" >
+		select count(guai.id)
+			from t_guaranteeitem guai 
+			left join t_guarantee gua on guai.guarantee_id=gua.id
+		<include refid="sql_where"/>
+	</select>
+	
+	<select id="getListByParent" parameterType="long" resultMap="GuaranteeItemResultMap" >
+		select guai.*
+			from t_guaranteeitem guai 
+			where guai.guarantee_id=#{id}
+	</select>
+
+</mapper>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.CustomerMapper">
+
+	<update id="createTable">
+		CREATE TABLE if not exists `t_customer` (
+		`id`
+		bigint(20) NOT NULL AUTO_INCREMENT,
+		`name` varchar(20) NOT NULL,
+		`age` int(11) NOT NULL,
+		`gender` int(11) DEFAULT NULL,
+		`tel` int(20) DEFAULT NULL,
+		`email` varchar(20) DEFAULT NULL,
+		`qq` int(20) DEFAULT NULL,
+		`wechat` varchar(20) DEFAULT NULL,
+		`seller_id` bigint(20) DEFAULT NULL,
+		`job_id` bigint(20) DEFAULT NULL,
+		`salaryLevel_id` bigint(10) DEFAULT NULL,
+		`customerSource_id` bigint(20) DEFAULT NULL,
+		`inputUser_id` bigint(25) DEFAULT NULL,
+		`inputTime` date DEFAULT NULL,
+		`status` int(11) DEFAULT NULL,
+		PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+	</update>
+	<!-- ID Id 主键，系统自动生成 数据库自动生成 菜单编号 sn 文本 是 菜单名称 name 文本 是 上级菜单 parent_id 
+		父菜单的id 图标 icon 文本 地址 url 文本 简介 intro 文本 -->
+	<!-- 建表语句 -->
+
+	<insert id="save" parameterType="Customer">
+		insert into t_customer (name,
+		age,gender,tel,email,qq,wechat,
+		seller_id,job_id,salaryLevel_id,customerSource_id,inputUser_id,inputTime,status)
+		values(#{name}, #{age}, #{gender}, #{tel}, #{email}, #{qq}, #{wechat},
+		#{seller.id}, #{job.id},
+		#{salaryLevel.id}, #{customerSource.id},
+		#{inputUser.id}, #{inputTime},#{status})
+	</insert>
+	<update id="update" parameterType="Customer">
+		update t_customer set
+		name=#{name},age=#{age},
+		gender=#{gender},tel=#{tel},email=#{email},qq=#{qq},wechat=#{wechat},
+		seller_id=#{seller.id},job_id=#{job.id},salaryLevel_id=#{salaryLevel.id}
+		,customerSource_id=#{customerSource.id},inputUser_id=#{inputUser.id},inputTime=#{inputTime},
+		status=#{status}
+		where id=#{id}
+	</update>
+	<delete id="delete" parameterType="long">
+		delete from t_customer where
+		id=#{id}
+	</delete>
+	<!-- 关联表关系的查询 -->
+	<resultMap type="Customer" id="CustomerResultMap">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="age" property="age" />
+		<result column="gender" property="gender" />
+		<result column="tel" property="tel" />
+		<result column="inputTime" property="inputTime" />
+		<result column="status" property="status" />
+		<association property="seller" javaType="Employee">
+			<id column="empid" property="id" />
+			<result column="empname" property="username" />
+		</association>
+		<association property="inputUser" javaType="Employee">
+			<id column="eid" property="id" />
+			<result column="ename" property="username" />
+		</association>
+		<association property="job" javaType="SystemDictionaryItem">
+			<id column="sid" property="id" />
+			<result column="sname" property="name" />
+		</association>
+		<association property="salaryLevel" javaType="SystemDictionaryItem">
+			<id column="syid" property="id" />
+			<result column="syname" property="name" />
+		</association>
+		<association property="customerSource" javaType="SystemDictionaryItem">
+			<id column="sysid" property="id" />
+			<result column="sysname" property="name" />
+		</association>
+	</resultMap>
+	<select id="get" parameterType="long" resultMap="CustomerResultMap">
+		select
+		c.*,emp.id empid,emp.username empname,
+		e.id eid,e.username ename,
+		s.id
+		sid,s.name sname,sy.id syid,sy.name syname,sys.id sysid,sys.name
+		sysname
+		from t_customer c
+		left join t_employee emp
+		on(c.seller_id=emp.id)
+		left join t_employee e on(c.inputUser_id=e.id)
+		left join t_systemdictionaryitem s on(c.job_id=s.id)
+		left join
+		t_systemdictionaryitem sy on(c.salaryLevel_id=sy.id)
+		left join
+		t_systemdictionaryitem sys on(c.customerSource_id=sys.id)
+		where
+		c.id=#{id}
+	</select>
+	<select id="getList" resultType="CustomerQuery" resultMap="CustomerResultMap">
+		select c.*,emp.id empid,emp.username empname,
+		e.id eid,e.username
+		ename,
+		s.id sid,s.name sname,sy.id syid,sy.name syname,sys.id
+		sysid,sys.name sysname
+		from (select * from t_customer c
+		<include refid="query" />
+		<if test="rows!=null">
+			limit #{beginIndex}, #{rows}
+		</if>
+		) c
+		left join t_employee emp on(c.seller_id=emp.id)
+		left join t_employee
+		e on(c.inputUser_id=e.id)
+		left join t_systemdictionaryitem s
+		on(c.job_id=s.id)
+		left join t_systemdictionaryitem sy
+		on(c.salaryLevel_id=sy.id)
+		left join t_systemdictionaryitem sys
+		on(c.customerSource_id=sys.id)
+	</select>
+	<select id="getCount" resultType="int" parameterType="CustomerQuery">
+		select
+		count(*) from t_customer c
+		<include refid="query" />
+	</select>
+	<!-- <select id="queryList" parameterType="CustomerQuery" resultMap="CustomerResultMap"> -->
+	<!-- select c.*,emp.id empid,emp.username empname, -->
+	<!-- e.id eid,e.username ename -->
+	<!-- from t_customer c -->
+	<!-- left join t_employee emp on(c.seller_id=emp.id) -->
+	<!-- left -->
+	<!-- join t_employee e on(c.inputUser_id=e.id) -->
+	<!-- </select> -->
+	<!-- 高级查询的条件 -->
+	<sql id="query">
+		<where>
+			<if test="name!=null and name!=''">
+				c.name like concat('%',#{name},'%')
+			</if>
+			<if test="age!=null">
+				AND c.age=#{age}
+			</if>
+			<if test="sellerId!=null">
+				AND c.seller_id=#{sellerId}
+			</if>
+			<if test="status!=null">
+				AND c.status=#{status}
+			</if>
+			<if test="inputUserId!=null">
+				AND c.inputUser_id=#{inputUserId}
+			</if>
+		</where>
+	</sql>
+</mapper>

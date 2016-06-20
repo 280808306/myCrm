@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.DepartmentMapper">
+
+		<sql id="querySql">
+			
+		</sql>
+		<update id="createTable">
+				CREATE TABLE IF NOT EXISTS `t_department` (
+				  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+				  `name` varchar(20) NOT NULL,
+				  `sn` varchar(30) NOT NULL,
+				  `manager_id` bigint(20) DEFAULT NULL,
+				  `parent_id` bigint(20) DEFAULT NULL,
+				  `dirPath` varchar(50) DEFAULT NULL,
+			  PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+		</update>
+	<insert id="save" parameterType="cn.wudi.crm.domain.Department">
+		insert into t_department (sn,name,manager_id,parent_id,dirPath,state)
+			values(#{sn},#{name},#{manager.id},#{parent.id},#{dirPath},#{state})	
+	</insert>
+	<delete id="delete" parameterType="long">
+		delete from t_department where id=#{id}
+	</delete>
+	<update id="update" parameterType="cn.wudi.crm.domain.Department">
+		update t_department set	sn=#{sn},name=#{name},manager_id=#{manager.id},parent_id=#{parent.id},children_id=#{children.id},
+		dirPath=#{dirPath},state=#{state}
+		where id=#{id}
+	</update>
+	
+	<select id="get" parameterType="long" resultType="cn.wudi.crm.domain.Department">
+		select * from t_department where id={id}
+	</select>
+	<select id="getList" parameterType="cn.wudi.crm.query.DepartmentQuery" resultType="cn.wudi.crm.domain.Department">
+		select * from t_department
+		<include refid="querySql" />
+		<if test="rows != null">
+			limit #{beginIndex}, #{rows}
+		</if>
+		
+	</select>
+	<select id="getCount" parameterType="cn.wudi.crm.domain.Department" resultType="int">
+		select count(*) from t_department
+		<include refid="querySql" />
+	</select>
+	
+	
+<!-- 	<select id="getTreeData" resultMap="DepartmentWithChildrenResultMap"> -->
+<!-- 		select dept.id,dept.name, -->
+<!-- 				child.id cid,child.name cname -->
+<!-- 		from t_department dept -->
+<!-- 		left join t_department child on(dept.id=child.parent_id) -->
+
+<!-- 		where dept.parent_id is null	 -->
+<!-- 	</select> -->
+</mapper>

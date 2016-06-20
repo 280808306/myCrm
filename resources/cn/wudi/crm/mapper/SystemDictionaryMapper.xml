@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wudi.crm.mapper.SystemDictionaryMapper">
+
+	<sql id="querySql">
+		<where>
+			<if test="name != null">
+				name like concat('%',#{name},'%')
+			</if>
+			<if test="sn != null">
+				and sn like concat('%',#{sn},'%')
+			</if>
+			<if test="state != null">
+				and state=#{state}
+			</if>
+		</where>
+	</sql>
+
+	<resultMap type="SystemDictionary" id="sdResultMap">
+		<id column="m_id" property="id" />
+		<result column="m_sn" property="sn" />
+		<result column="m_name" property="name" />
+		<result column="m_state" property="state" />
+		<result column="m_intro" property="intro" />
+
+		<!-- 一对多 -->
+		<collection property="details" ofType="SystemDictionaryItem">
+			<id column="d_id" property="id" />
+			<result column="d_name" property="name" />
+		</collection>
+	</resultMap>
+	<!-- ID id 主键，系统自动生成 数据库自动生成 字典目录编号 sn 文本 是 字典目录名称 name 文本 是 状态 state 1正常 
+		-1停用 文本 字典明细 details 一对多 明细对象 -->
+	<!-- 建表语句 -->
+	<update id="createTable">
+		create table if not exists t_systemdictionary(
+		id bigint(20) not null auto_increment,
+		sn varchar(40) not null,
+		name varchar(20) not null,
+		state int(1) default null,
+		intro varchar(225) default null,
+		primary key(id)
+		)engine=innodb default charset=utf8
+	</update>
+
+	<insert id="save" parameterType="SystemDictionary">
+		insert into t_systemdictionary
+		(sn, name, state, intro) values(#{sn}, #{name}, #{state}, #{intro})
+	</insert>
+
+	<delete id="delete" parameterType="long">
+		delete from t_systemdictionary
+		where id=#{id}
+	</delete>
+
+	<update id="update" parameterType="SystemDictionary">
+		update t_systemdictionary set
+		sn=#{sn}, name=#{name}, state=#{state},intro=#{intro} where id=#{id}
+	</update>
+
+	<select id="get" parameterType="long" resultMap="sdResultMap">
+		select m.id m_id, m.name m_name, m.sn m_sn, m.state m_state, m.intro m_intro, d.id d_id, d.name d_name
+		from t_systemdictionary m left join t_systemdictionaryitem d on(m.id = d.parent_id) 
+		where m.id=#{id}
+	</select>
+
+	<select id="getList" parameterType="SystemDictionaryQuery"
+		resultType="SystemDictionary">
+		select * from t_systemdictionary 
+		<include refid="querySql" />
+		<if test="rows != null">
+			limit #{beginIndex}, #{rows}
+		</if> 
+	</select>
+
+	<select id="getCount" parameterType="SystemDictionaryQuery"
+		resultType="int">
+		select count(*) from t_systemdictionary
+		<!-- 导入查询语句 -->
+		<include refid="querySql" />
+	</select>
+
+</mapper>
